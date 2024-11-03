@@ -26,56 +26,61 @@ def get_tailwind_version():
     with urllib.request.urlopen("https://api.github.com/repos/dobicinaitis/tailwind-cli-extra/releases/latest") as response:
         return json.loads(response.read())["tag_name"]
 
-def download_file(url: str, dest_path: Path):
-    urllib.request.urlretrieve(url, dest_path)
+def install_tailwind(directory: Path, version: str, filename: str) -> Path:
+    """Download and install tailwindcss"""
+    print(f"Installing Tailwind CSS CLI with DaisyUI ({version})...")
+    
+    # Download with original filename
+    url = f"https://github.com/dobicinaitis/tailwind-cli-extra/releases/download/{version}/{filename}"
+    temp_path = directory / filename
+    final_path = directory / "tailwindcss"
+    
+    # Download Tailwind CSS
+    urllib.request.urlretrieve(url, temp_path)
+    
+    # Make executable
     if os.name != 'nt':  # not Windows
-        os.chmod(dest_path, 0o755)
-
-def run_tailwind_init(directory: Path):
-    """Run tailwindcss init in the specified directory"""
-    tailwind_path = directory / "tailwindcss"
-    subprocess.run([str(tailwind_path), "init"], cwd=directory, check=True)
+        os.chmod(temp_path, 0o755)
+    
+    # Rename to tailwindcss
+    if final_path.exists():
+        final_path.unlink()
+    temp_path.rename(final_path)
+    
+    print("Tailwind CSS CLI with DaisyUI installed successfully!")
+    return final_path
 
 @app.command()
 def init(directory: Path = typer.Argument(".", help="Directory to initialize the project in")):
     """Initialize a new FastHTML + Tailwind + DaisyUI project"""
     from .templates import TEMPLATES
     
-    directory = Path(directory)
+    directory = Path(directory).resolve()
     directory.mkdir(exist_ok=True)
     
-    # Create assets directory
-    assets_dir = directory / "assets"
-    assets_dir.mkdir(exist_ok=True)
-    
-    # Download and setup tailwindcss
+    # Install tailwindcss
     system, machine = get_system_info()
     version = get_tailwind_version()
     filename = f"tailwindcss-extra-{system}-{machine}"
     if system == "windows":
         filename += ".exe"
-        
-    url = f"https://github.com/dobicinaitis/tailwind-cli-extra/releases/download/{version}/{filename}"
-    tailwind_path = directory / "tailwindcss"
     
-    print(f"Downloading Tailwind CSS CLI ({version})...")
-    download_file(url, tailwind_path)
+    tailwind_path = install_tailwind(directory, version, filename)
     
-    # Initialize tailwind
+    # Initialize tailwind and create files
     print("Initializing Tailwind CSS...")
-    run_tailwind_init(directory)
+    subprocess.run([str(tailwind_path), "init"], cwd=directory, check=True)
     
     # Create template files
     for file_path, content in TEMPLATES.items():
         full_path = directory / file_path
         full_path.parent.mkdir(exist_ok=True)
+        print(f"Creating {file_path}...")
         full_path.write_text(content)
-        
-    print("\nSetup complete!")
-    print("\nNext steps:")
-    print("1. Run: pip install python-fasthtml")
-    print("3. Run: fastwand run")
-    print("4. In another terminal, run: python main.py")
+    
+    print("Setup complete!")
+    print("Now either start a watcher with: fastwand watch")
+    print("Or minify your CSS and start the server with: fastwand run")
 
 @app.command()
 def watch(directory: Path = typer.Argument(".", help="Directory to watch for changes")):
