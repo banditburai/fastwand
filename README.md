@@ -10,7 +10,7 @@ A CLI tool to initialize FastHTML + Tailwind + DaisyUI projects. FastWand automa
 
 ## Installation
 
-    uv pip install fastwand
+    pip install fastwand
 
 ## Usage
 
@@ -33,9 +33,14 @@ Run these commands in separate terminal windows:
     python main.py
 
 ### Production Mode
-Build the minified CSS and run the server:
+Build the minified CSS and run the server in a single command:
 
     fastwand run
+
+This command:
+1. Builds a minified version of your CSS for better performance
+2. Automatically starts the Python server (main.py)
+
 
 ## System Compatibility
 
