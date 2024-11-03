@@ -101,8 +101,15 @@ def run(directory: Path = typer.Argument(".", help="Directory to run the project
     """Build minified CSS and run the Python server"""
     print("Building CSS and starting server...")
     
-    # Build CSS
+    # Resolve absolute path
+    directory = Path(directory).resolve()
     tailwind_path = directory / "tailwindcss"
+    
+    # Check if tailwindcss exists
+    if not tailwind_path.exists():
+        raise FileNotFoundError(f"Tailwind executable not found at {tailwind_path}. Did you run 'fastwand init' first?")
+    
+    # Build CSS
     subprocess.run([
         str(tailwind_path),
         "-i", "assets/input.css",
