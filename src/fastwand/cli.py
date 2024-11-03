@@ -73,9 +73,8 @@ def init(directory: Path = typer.Argument(".", help="Directory to initialize the
         
     print("\nSetup complete!")
     print("\nNext steps:")
-    print("1. Run: uv pip install python-fasthtml")
-    print("2. Run: npm install -D @tailwindcss/typography daisyui")
-    print("3. Run: fastwand watch")
+    print("1. Run: pip install python-fasthtml")
+    print("3. Run: fastwand run")
     print("4. In another terminal, run: python main.py")
 
 @app.command()
