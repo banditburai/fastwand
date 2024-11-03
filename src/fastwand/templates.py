@@ -1,4 +1,38 @@
+# Base Tailwind templates
 TEMPLATES = {
+    "assets/input.css": """@tailwind base;
+@tailwind components;
+@tailwind utilities;""",
+    
+    "tailwind.config.js": """/** @type {import('tailwindcss').Config} */
+module.exports = {
+  content: [
+    "./**/*.py",    
+  ],
+  theme: {
+    extend: {},
+  },
+  plugins: [],
+}""",
+    
+    "main.py": """from fasthtml.common import *
+
+app, rt = fast_app()
+
+@rt("/")
+def get():
+    return Titled("FastHTML with Tailwind",
+        Main(
+            H1("Welcome to FastHTML", cls="text-4xl font-bold"),
+            P("A simple template to get you started.", cls="mt-4 text-lg"),
+        )
+    )
+
+serve()"""
+}
+
+# Tailwind + DaisyUI templates
+TEMPLATES_DAISY = {
     "assets/input.css": """@tailwind base;
 @tailwind components;
 @tailwind utilities;""",
@@ -23,10 +57,11 @@ app, rt = fast_app()
 
 @rt("/")
 def get():
-    return Titled("FastHTML with Tailwind",
+    return Titled("FastHTML with Tailwind + DaisyUI",
         Main(
-            H1("Welcome to FastHTML", cls="text-4xl font-bold"),
+            H1("Welcome to FastHTML", cls="hero text-4xl font-bold"),
             P("A simple template to get you started.", cls="mt-4 text-lg"),
+            Button("Click me!", cls="btn btn-primary mt-4"),
         )
     )
 

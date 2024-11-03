@@ -22,16 +22,36 @@ def get_system_info():
         
     return system, machine
 
-def get_tailwind_version():
+def get_tailwind_only_version():
+    """Get latest version of vanilla Tailwind CSS"""
+    with urllib.request.urlopen("https://api.github.com/repos/tailwindlabs/tailwindcss/releases/latest") as response:
+        return json.loads(response.read())["tag_name"]
+
+def get_tailwind_daisy_version():
+    """Get latest version of Tailwind CSS with DaisyUI"""
     with urllib.request.urlopen("https://api.github.com/repos/dobicinaitis/tailwind-cli-extra/releases/latest") as response:
         return json.loads(response.read())["tag_name"]
 
-def install_tailwind(directory: Path, version: str, filename: str) -> Path:
+def install_tailwind(directory: Path, use_daisy: bool) -> Path:
     """Download and install tailwindcss"""
-    print(f"Installing Tailwind CSS CLI with DaisyUI ({version})...")
+    system, machine = get_system_info()
+    
+    if use_daisy:
+        version = get_tailwind_daisy_version()
+        filename = f"tailwindcss-extra-{system}-{machine}"
+        url_base = "https://github.com/dobicinaitis/tailwind-cli-extra/releases/download"
+        print(f"Installing Tailwind CSS CLI with DaisyUI ({version})...")
+    else:
+        version = get_tailwind_only_version()
+        filename = f"tailwindcss-{system}-{machine}"
+        url_base = "https://github.com/tailwindlabs/tailwindcss/releases/download"
+        print(f"Installing Tailwind CSS CLI ({version})...")
+    
+    if system == "windows":
+        filename += ".exe"
     
     # Download with original filename
-    url = f"https://github.com/dobicinaitis/tailwind-cli-extra/releases/download/{version}/{filename}"
+    url = f"{url_base}/{version}/{filename}"
     temp_path = directory / filename
     final_path = directory / "tailwindcss"
     
@@ -47,40 +67,44 @@ def install_tailwind(directory: Path, version: str, filename: str) -> Path:
         final_path.unlink()
     temp_path.rename(final_path)
     
-    print("Tailwind CSS CLI with DaisyUI installed successfully!")
+    print("Installation successful!")
     return final_path
 
 @app.command()
 def init(directory: Path = typer.Argument(".", help="Directory to initialize the project in")):
-    """Initialize a new FastHTML + Tailwind + DaisyUI project"""
-    from .templates import TEMPLATES
+    """Initialize a new FastHTML + Tailwind project"""
+    from .templates import TEMPLATES, TEMPLATES_DAISY
     
     directory = Path(directory).resolve()
     directory.mkdir(exist_ok=True)
     
-    # Install tailwindcss
-    system, machine = get_system_info()
-    version = get_tailwind_version()
-    filename = f"tailwindcss-extra-{system}-{machine}"
-    if system == "windows":
-        filename += ".exe"
+    # Ask about DaisyUI
+    use_daisy = typer.confirm("Would you like to include DaisyUI?", default=True)
     
-    tailwind_path = install_tailwind(directory, version, filename)
+    # Install tailwindcss
+    tailwind_path = install_tailwind(directory, use_daisy)
     
     # Initialize tailwind and create files
     print("Initializing Tailwind CSS...")
     subprocess.run([str(tailwind_path), "init"], cwd=directory, check=True)
     
-    # Create template files
-    for file_path, content in TEMPLATES.items():
+    # Create template files using appropriate templates
+    templates = TEMPLATES_DAISY if use_daisy else TEMPLATES
+    for file_path, content in templates.items():
         full_path = directory / file_path
         full_path.parent.mkdir(exist_ok=True)
         print(f"Creating {file_path}...")
         full_path.write_text(content)
     
-    print("Setup complete!")
-    print("Now either start a watcher with: fastwand watch")
-    print("Or minify your CSS and start the server with: fastwand run")
+    if use_daisy:
+        print("\nSetup complete!")
+        print("Now run: npm install -D @tailwindcss/typography daisyui")
+    else:
+        print("\nSetup complete!")
+    
+    print("Then either:")
+    print("1. Start a watcher with: fastwand watch")
+    print("2. Or minify your CSS and start the server with: fastwand run")
 
 @app.command()
 def watch(directory: Path = typer.Argument(".", help="Directory to watch for changes")):
@@ -88,7 +112,14 @@ def watch(directory: Path = typer.Argument(".", help="Directory to watch for cha
     print("Starting Tailwind watch mode...")
     print("NOTE: Run 'python main.py' in a separate terminal")
     
+    # Resolve absolute path
+    directory = Path(directory).resolve()
     tailwind_path = directory / "tailwindcss"
+    
+    # Check if tailwindcss exists
+    if not tailwind_path.exists():
+        raise FileNotFoundError(f"Tailwind executable not found at {tailwind_path}. Did you run 'fastwand init' first?")
+    
     subprocess.run([
         str(tailwind_path),
         "-i", "assets/input.css",
