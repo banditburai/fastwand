@@ -1,6 +1,6 @@
 [project]
 name = "fastwand"
-version = "0.1.22"
+version = "0.1.23"
 description = "CLI tool to initialize FastHTML + Tailwind + DaisyUI projects"
 readme = "README.md"
 authors = [
@@ -10,8 +10,7 @@ requires-python = ">=3.11"
 dependencies = [
     "requests>=2.31.0",
     "platformdirs>=4.2.0",
-    "python-fasthtml>=0.9.0",
-    "typer-slim>=0.12.5",
+    "python-fasthtml>=0.9.0",    
 ]
 
 [project.scripts]
