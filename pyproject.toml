@@ -1,6 +1,6 @@
 [project]
 name = "fastwand"
-version = "0.1.23"
+version = "0.1.24"
 description = "CLI tool to initialize FastHTML + Tailwind + DaisyUI projects"
 readme = "README.md"
 authors = [
@@ -14,7 +14,7 @@ dependencies = [
 ]
 
 [project.scripts]
-fastwand = "fastwand.cli:app"
+fastwand = "fastwand.cli:main"
 
 [build-system]
 requires = ["hatchling"]
