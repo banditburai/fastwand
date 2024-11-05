@@ -180,13 +180,14 @@ def main():
     directory = sys.argv[2] if len(sys.argv) > 2 else "."
     
     try:
+        # Only handle run and watch directly
         if command == "run":
             run_command(directory)
         elif command == "watch":
             watch_command(directory)
         else:
-            print(f"ERROR:Unknown command: {command}", flush=True)
-            sys.exit(1)
+            # Pass through to Go CLI
+            sys.exit(0)  # Exit cleanly to let Go handle it
     except Exception as e:
         print(f"ERROR:{str(e)}", flush=True)
         sys.exit(1)
