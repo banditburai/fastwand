@@ -1,6 +1,6 @@
 [project]
 name = "fastwand"
-version = "0.1.29"
+version = "0.1.30"
 description = "CLI tool to initialize FastHTML + Tailwind + DaisyUI projects"
 readme = "README.md"
 authors = [

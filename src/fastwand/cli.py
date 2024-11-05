@@ -187,7 +187,11 @@ def main():
             watch_command(directory)
         else:
             # Pass through to Go CLI
-            sys.exit(0)  # Exit cleanly to let Go handle it
+            cli = ensure_fastwand_installed()
+            try:
+                subprocess.run([str(cli)] + sys.argv[1:], check=True)
+            except subprocess.CalledProcessError as e:
+                sys.exit(e.returncode)
     except Exception as e:
         print(f"ERROR:{str(e)}", flush=True)
         sys.exit(1)
