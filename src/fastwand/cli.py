@@ -6,19 +6,6 @@ import os
 import sys
 import subprocess
 from platformdirs import user_cache_dir
-import signal
-
-__all__ = ['run_command', 'watch_command']
-
-def handle_sigint(signum, frame, processes):
-    """Gracefully handle SIGINT (Ctrl+C)"""
-    print("\nSTATUS:Shutting down processes...", flush=True)
-    for process in processes:
-        if process and process.poll() is None:
-            process.terminate()
-            process.wait()
-    print("DONE:true", flush=True)
-    sys.exit(0)
 
 def get_system_info():
     """Get system and architecture info"""
@@ -88,113 +75,15 @@ def ensure_fastwand_installed() -> Path:
     
     return cli_path
 
-def watch_command(directory: str):
-    """Watch for changes and rebuild CSS"""
-    try:
-        directory = Path(directory).resolve()
-        
-        # Check if required files exist
-        tailwind_path = directory / "tailwindcss"
-        if platform.system().lower() == "windows":
-            tailwind_path = tailwind_path.with_suffix(".exe")
-            
-        if not tailwind_path.exists():
-            print(f"ERROR:tailwindcss not found in {directory}", flush=True)
-            sys.exit(1)
-            
-        print("STATUS:Starting Tailwind watch process...", flush=True)
-        
-        # Start Tailwind in watch mode
-        tailwind = subprocess.Popen([
-            str(tailwind_path),
-            "-i", "assets/input.css",
-            "-o", "assets/output.css",
-            "--watch"
-        ], cwd=directory, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        
-        print("STATUS:Starting Python server...", flush=True)
-        server = subprocess.Popen(["python", "main.py"], cwd=directory)
-        
-        processes = [tailwind, server]
-        signal.signal(signal.SIGINT, lambda s, f: handle_sigint(s, f, processes))
-        
-        while server.poll() is None:
-            output = tailwind.stdout.readline()
-            if output:
-                msg = output.decode().strip()
-                if "Change detected" in msg:
-                    print("STATUS:Rebuilding CSS...", flush=True)
-                elif "Done" in msg:
-                    print("STATUS:CSS rebuilt", flush=True)
-                elif "Error" in msg:
-                    print(f"ERROR:{msg}", flush=True)
-        
-        print("DONE:true", flush=True)
-        
-    except Exception as e:
-        print(f"ERROR:{str(e)}", flush=True)
-        sys.exit(1)
-
-def run_command(directory: str):
-    """Run server with status updates to Go CLI"""
-    try:
-        directory = Path(directory).resolve()
-        
-        # Check if required files exist
-        tailwind_path = directory / "tailwindcss"
-        if platform.system().lower() == "windows":
-            tailwind_path = tailwind_path.with_suffix(".exe")
-            
-        if not tailwind_path.exists():
-            print(f"ERROR:tailwindcss not found in {directory}", flush=True)
-            sys.exit(1)
-            
-        print("STATUS:Building CSS...", flush=True)
-        
-        # Build CSS first
-        subprocess.run([
-            str(tailwind_path),
-            "-i", "assets/input.css",
-            "-o", "assets/output.css",
-            "--minify"
-        ], cwd=directory, check=True)
-        
-        print("STATUS:Starting Python server...", flush=True)
-        server = subprocess.Popen(["python", "main.py"], cwd=directory)
-        
-        # Wait for server to finish
-        server.wait()
-        print("DONE:true", flush=True)
-        
-    except subprocess.CalledProcessError as e:
-        print(f"ERROR:{str(e)}", flush=True)
-        sys.exit(1)
-
 def main():
     """Main CLI entrypoint"""
-    if len(sys.argv) < 2:
-        print("ERROR:No command specified", flush=True)
-        sys.exit(1)
-        
-    command = sys.argv[1]
-    directory = sys.argv[2] if len(sys.argv) > 2 else "."
+    cli = ensure_fastwand_installed()
     
+    # Forward all arguments to the Go CLI
     try:
-        # Only handle run and watch directly
-        if command == "run":
-            run_command(directory)
-        elif command == "watch":
-            watch_command(directory)
-        else:
-            # Pass through to Go CLI
-            cli = ensure_fastwand_installed()
-            try:
-                subprocess.run([str(cli)] + sys.argv[1:], check=True)
-            except subprocess.CalledProcessError as e:
-                sys.exit(e.returncode)
-    except Exception as e:
-        print(f"ERROR:{str(e)}", flush=True)
-        sys.exit(1)
+        subprocess.run([str(cli)] + sys.argv[1:], check=True)
+    except subprocess.CalledProcessError as e:
+        sys.exit(e.returncode)
 
 if __name__ == "__main__":
     main()
